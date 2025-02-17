@@ -1,0 +1,199 @@
+import React, { useState, useMemo } from "react";
+import { ImCross } from "react-icons/im";
+import { Button } from "@mui/material";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import { useDispatch, useSelector } from "react-redux";
+import { toggleShowAddAdminPermissionModal } from "../../store/slices/ModalManager";
+import ModalTemplate from "./ModalTemplate";
+
+const AddPermissionModal = () => {
+  const dispatch = useDispatch();
+
+  // Get heading and show flag from Redux
+  const modalHeading = useSelector(
+    (state) => state.modalManager.addAdminPermissionModal.heading
+  );
+  const show = useSelector(
+    (state) => state.modalManager.addAdminPermissionModal.show
+  );
+
+  // Only render when "show" is true
+  if (!show) return null;
+
+  // Close modal callback
+  const closeModalCallback = () => {
+    dispatch(toggleShowAddAdminPermissionModal({ show: false }));
+  };
+
+  // Local state for search, pagination, and selected permissions
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedPermissions, setSelectedPermissions] = useState([]);
+
+  // Create 16 hardcoded permissions
+  const permissionsList = useMemo(() => {
+    return Array.from({ length: 16 }, (_, i) => ({
+      id: i + 1,
+      name: `Permission ${i + 1}`
+    }));
+  }, []);
+
+  // Filter permissions based on search query (case-insensitive)
+  const filteredPermissions = useMemo(() => {
+    return permissionsList.filter((permission) =>
+      permission.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [permissionsList, searchQuery]);
+
+  // Pagination calculation: 4 permissions per page
+  const itemsPerPage = 4;
+  const totalPages = Math.ceil(filteredPermissions.length / itemsPerPage);
+  const currentPagePermissions = filteredPermissions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
+
+  // Handle pagination click
+  const handlePageClick = (pageNum) => {
+    setCurrentPage(pageNum);
+  };
+
+  // Toggle selection of a permission (max 3 selections)
+  const toggleSelectPermission = (permissionId) => {
+    if (selectedPermissions.includes(permissionId)) {
+      setSelectedPermissions(selectedPermissions.filter((id) => id !== permissionId));
+    } else {
+      if (selectedPermissions.length < 3) {
+        setSelectedPermissions([...selectedPermissions, permissionId]);
+      } else {
+        alert("You can select a maximum of 3 permissions.");
+      }
+    }
+  };
+
+  // Confirm action (for now, simply alert the selected permissions)
+  const confirmPermissionAddition = () => {
+    alert(`Selected Permissions: ${selectedPermissions.join(", ")}`);
+    closeModalCallback();
+  };
+
+  return (
+    <ModalTemplate closeModalCallback={closeModalCallback}>
+      <div className="modal">
+        {/* Modal Header */}
+        <div className="modal-heading-container">
+          <div className="modal-heading-container-value">{modalHeading}</div>
+          <ImCross
+            onClick={closeModalCallback}
+            className="modal-heading-container-close-icon"
+          />
+        </div>
+
+        {/* Modal Body */}
+        <div className="modal-body-container">
+          {/* Search bar and pagination */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between"
+            }}
+          >
+            <input
+              type="text"
+              placeholder="Search for permissions..."
+              className="search-box"
+              value={searchQuery}
+              onChange={handleSearchChange}
+            />
+            {/* Pagination circles */}
+            <div style={{ display: "flex", alignItems: "center" }}>
+              {Array.from({ length: totalPages }, (_, index) => {
+                const pageNum = index + 1;
+                return (
+                  <div
+                    key={pageNum}
+                    onClick={() => handlePageClick(pageNum)}
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      backgroundColor: currentPage === pageNum ? "#1976d2" : "#ccc",
+                      marginLeft: 5,
+                      cursor: "pointer"
+                    }}
+                  ></div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Permissions tiles */}
+          <div
+            className="permissions-container"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              marginTop: "1rem"
+            }}
+          >
+            {currentPagePermissions.length > 0 ? (
+              currentPagePermissions.map((permission) => {
+                const isSelected = selectedPermissions.includes(permission.id);
+                return (
+                  <div
+                    key={permission.id}
+                    onClick={() => toggleSelectPermission(permission.id)}
+                    style={{
+                      border: isSelected ? "2px solid #1976d2" : "1px solid #ccc",
+                      borderRadius: 8,
+                      padding: "0.5rem",
+                      margin: "0.5rem",
+                      width: "calc(25% - 1rem)",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      cursor: "pointer",
+                      backgroundColor: isSelected ? "#e3f2fd" : "#fff"
+                    }}
+                  >
+                    <div>{permission.name}</div>
+                    <ShoppingCartIcon />
+                  </div>
+                );
+              })
+            ) : (
+              <div
+                style={{
+                  width: "100%",
+                  textAlign: "center",
+                  marginTop: "1rem"
+                }}
+              >
+                No permissions found.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="modal-action-container">
+          <Button variant="contained" color="error" onClick={closeModalCallback}>
+            Cancel
+          </Button>
+          <Button variant="outlined" onClick={confirmPermissionAddition}>
+            Confirm Permission
+          </Button>
+        </div>
+      </div>
+    </ModalTemplate>
+  );
+};
+
+export default AddPermissionModal;
