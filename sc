@@ -1,32 +1,32 @@
-.modal {
+.modal-container {
   @apply bg-white rounded-lg p-6 shadow-md;
 }
 
-.modal-heading-container {
+.modal-header {
   @apply flex justify-between items-center border-b pb-2;
 }
 
-.modal-heading-container-value {
+.modal-title {
   @apply text-xl font-bold;
 }
 
-.modal-heading-container-close-icon {
+.modal-close {
   @apply cursor-pointer text-gray-500 hover:text-gray-700;
 }
 
-.modal-body-container {
+.modal-body {
   @apply mt-4;
 }
 
 .modal-search-pagination {
-  @apply flex flex-row justify-between items-center mb-4;
+  @apply flex justify-between items-center mb-4;
 }
 
-.modal-content-container {
+.modal-content {
   @apply h-[60vh] overflow-auto flex flex-col gap-4 mt-4;
 }
 
-.modal-action-container {
+.modal-footer {
   @apply flex justify-end gap-2 mt-4;
 }
 
