@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { ImCross } from "react-icons/im";
 import { Button, Pagination } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
@@ -9,8 +9,15 @@ import ModalTemplate from "./ModalTemplate";
 import usePaginationHandler from "../../hooks/usePaginationHandler";
 import CloudCoreSearchBar from "../../components/CustomStyledComponents/CloudSearchBar";
 import AddPermissionToCartTitle from "../../PermissionComponents/AddPermissionToCartTitle";
+import NotContentFound from "../NoContentFound";
 
-const AddPermissionModalHardcoded = () => {
+// API hook to fetch all universal permissions
+import { useGetAllUniversalPermissionsQuery } from "../../services/TeamsApiService";
+
+// Import external Tailwind CSS
+import "../../css/AddPermissionModal.css";
+
+const AddPermissionModalFromDB = () => {
   const dispatch = useDispatch();
 
   const modalHeading = useSelector(
@@ -22,66 +29,64 @@ const AddPermissionModalHardcoded = () => {
 
   if (!show) return null;
 
-  // Destructure the custom pagination hook (array destructuring)
+  // Destructure the custom pagination hook (array format)
   const [{ page, rowsPerPage }, resetPages, handleChangePage] =
     usePaginationHandler();
 
+  // Override rowsPerPage to 4
+  const fixedRowsPerPage = 4;
+
   const [searchValue, setSearchValue] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState([]);
+  const [filteredPermissions, setFilteredPermissions] = useState([]);
 
-  const closeModalCallback = () => {
-    dispatch(toggleShowAddAdminPermissionModal({ show: false }));
-  };
+  // Fetch all permissions from the DB
+  const { data: allPermissions = [], isLoading: permissionsLoading } =
+    useGetAllUniversalPermissionsQuery();
 
-  // Create 16 hardcoded permissions
-  const permissionsList = useMemo(() => {
-    return Array.from({ length: 16 }, (_, i) => ({
-      id: i + 1,
-      name: `Permission ${i + 1}`,
-      description: `Description for Permission ${i + 1}`,
-    }));
-  }, []);
+  // Filter permissions based on search query
+  useEffect(() => {
+    if (allPermissions && !permissionsLoading) {
+      const formattedSearch = searchValue.toLowerCase();
+      const filtered = allPermissions.filter((permission) => {
+        const nameMatched = permission.name.toLowerCase().includes(formattedSearch);
+        const descriptionMatched = permission.description.toLowerCase().includes(formattedSearch);
+        return nameMatched || descriptionMatched;
+      });
+      setFilteredPermissions(filtered);
+      resetPages();
+    }
+  }, [searchValue, allPermissions, permissionsLoading, resetPages]);
 
-  // Filter permissions based on search query (case-insensitive)
-  const filteredPermissions = useMemo(() => {
-    const formattedSearch = searchValue.toLowerCase();
-    return permissionsList.filter(
-      (permission) =>
-        permission.name.toLowerCase().includes(formattedSearch) ||
-        permission.description.toLowerCase().includes(formattedSearch)
-    );
-  }, [permissionsList, searchValue]);
+  const totalPages = Math.ceil(filteredPermissions.length / fixedRowsPerPage);
 
-  const totalPages = Math.ceil(filteredPermissions.length / rowsPerPage);
-
-  // Render the permission tiles for the current page using your tile component.
+  // Render permission tiles for the current page
   const permissionsOnCurrentPage = () => {
-    if (filteredPermissions.length > 0) {
+    if (filteredPermissions.length > 0 || !permissionsLoading) {
       const perms = [];
-      const startIndex = rowsPerPage * (page - 1);
-      const endIndex = Math.min(filteredPermissions.length, rowsPerPage * page);
+      const startIndex = fixedRowsPerPage * (page - 1);
+      const endIndex = Math.min(filteredPermissions.length, fixedRowsPerPage * page);
       for (let i = startIndex; i < endIndex; i++) {
         const permission = filteredPermissions[i];
         perms.push(
           <AddPermissionToCartTitle
-            key={`hardcoded-permission-${permission.id}`}
-            isLoading={false}
+            key={`db-permission-${permission.id}`}
+            isLoading={permissionsLoading}
             permission={permission}
             permissionSelected={selectedPermissions.some(
-              (perm) => perm.id === permission.id
+              (perm) => perm.name === permission.name
             )}
             togglePermission={() => {
-              // Toggle selection: if already selected, remove it; otherwise add it.
-              const alreadySelected = selectedPermissions.some(
-                (perm) => perm.id === permission.id
+              let updatedSelected = [...selectedPermissions];
+              const index = updatedSelected.findIndex(
+                (perm) => perm.name === permission.name
               );
-              if (alreadySelected) {
-                setSelectedPermissions(
-                  selectedPermissions.filter((perm) => perm.id !== permission.id)
-                );
+              if (index !== -1) {
+                updatedSelected.splice(index, 1);
               } else {
-                setSelectedPermissions([...selectedPermissions, permission]);
+                updatedSelected.push({ name: permission.name });
               }
+              setSelectedPermissions(updatedSelected);
             }}
           />
         );
@@ -89,74 +94,56 @@ const AddPermissionModalHardcoded = () => {
       return perms;
     } else {
       return (
-        <div className="w-full flex flex-col items-center justify-center">
-          <span className="mt-8 text-2xl font-bold">No permissions found</span>
+        <div className="no-permissions">
+          <NotContentFound />
+          <span className="no-permissions-text">No permissions found</span>
         </div>
       );
     }
   };
 
+  const closeModalCallback = () => {
+    dispatch(toggleShowAddAdminPermissionModal({ show: false }));
+  };
+
   return (
     <ModalTemplate closeModalCallback={closeModalCallback}>
-      <div className="modal">
+      <div className="modal-container">
         {/* Modal Header */}
-        <div className="modal-heading-container">
-          <div className="modal-heading-container-value">{modalHeading}</div>
-          <ImCross
-            onClick={closeModalCallback}
-            className="modal-heading-container-close-icon"
-          />
+        <div className="modal-header">
+          <div className="modal-title">{modalHeading}</div>
+          <ImCross onClick={closeModalCallback} className="modal-close" />
         </div>
 
         {/* Modal Body */}
-        <div className="modal-body-container">
-          {/* Search Bar and Pagination (placed side by side) */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: "1rem",
-            }}
-          >
+        <div className="modal-body">
+          <div className="modal-search-pagination">
             <CloudCoreSearchBar
-              placeholder="Search for permissions..."
+              placeholder="Permission name"
+              disabled={filteredPermissions.length === 0 && searchValue.length === 0}
               searchValue={searchValue}
-              setSearchValue={(e) => {
-                setSearchValue(e.target.value);
-                resetPages();
-              }}
+              setSearchValue={(e) => setSearchValue(e.target.value)}
             />
             <Pagination
               variant="outlined"
               shape="rounded"
-              boundaryCount={1}
-              siblingCount={1}
-              count={totalPages}
+              boundaryCount={0}
+              siblingCount={0}
               page={page}
               onChange={handleChangePage}
+              count={totalPages}
+              showFirstButton
+              showLastButton
             />
           </div>
-
-          {/* Permissions Grid */}
-          <div
-            className="permissions-container flex flex-wrap gap-4"
-            style={{ marginTop: "1rem" }}
-          >
+          <div className="modal-content">
             {permissionsOnCurrentPage()}
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div
-          className="modal-action-container flex justify-end gap-2"
-          style={{ marginTop: "1rem" }}
-        >
-          <Button
-            variant="contained"
-            color="error"
-            onClick={closeModalCallback}
-          >
+        <div className="modal-footer">
+          <Button variant="contained" color="error" onClick={closeModalCallback}>
             Cancel
           </Button>
           <Button
@@ -178,4 +165,4 @@ const AddPermissionModalHardcoded = () => {
   );
 };
 
-export default AddPermissionModalHardcoded;
+export default AddPermissionModalFromDB;
