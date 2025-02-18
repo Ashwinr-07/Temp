@@ -108,15 +108,15 @@ const AddPermissionModalFromDB = () => {
 
   return (
     <ModalTemplate closeModalCallback={closeModalCallback}>
-      <div className="modal-container">
+      <div className="modal">
         {/* Modal Header */}
-        <div className="modal-header">
-          <div className="modal-title">{modalHeading}</div>
-          <ImCross onClick={closeModalCallback} className="modal-close" />
+        <div className="modal-heading-container">
+          <div className="modal-heading-container-value">{modalHeading}</div>
+          <ImCross onClick={closeModalCallback} className="modal-heading-container-close-icon" />
         </div>
 
         {/* Modal Body */}
-        <div className="modal-body">
+        <div className="modal-body-container">
           <div className="modal-search-pagination">
             <CloudCoreSearchBar
               placeholder="Permission name"
@@ -136,24 +136,20 @@ const AddPermissionModalFromDB = () => {
               showLastButton
             />
           </div>
-          <div className="modal-content">
+          <div className="modal-content-container">
             {permissionsOnCurrentPage()}
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="modal-footer">
+        <div className="modal-action-container">
           <Button variant="contained" color="error" onClick={closeModalCallback}>
             Cancel
           </Button>
           <Button
             variant="outlined"
             onClick={() => {
-              alert(
-                `Selected Permissions: ${selectedPermissions
-                  .map((p) => p.name)
-                  .join(", ")}`
-              );
+              alert(`Selected Permissions: ${selectedPermissions.map((p) => p.name).join(", ")}`);
               closeModalCallback();
             }}
           >
