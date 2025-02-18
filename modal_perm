@@ -9,12 +9,11 @@ import ModalTemplate from "./ModalTemplate";
 import usePaginationHandler from "../../hooks/usePaginationHandler";
 import CloudCoreSearchBar from "../../components/CustomStyledComponents/CloudSearchBar";
 import AddPermissionToCartTitle from "../../PermissionComponents/AddPermissionToCartTitle";
-import NotContentFound from "../NoContentFound";
 
 // API hook to fetch all universal permissions
 import { useGetAllUniversalPermissionsQuery } from "../../services/TeamsApiService";
 
-// Import external Tailwind CSS
+// Import external Tailwind CSS file (see CSS file below)
 import "../../css/AddPermissionModal.css";
 
 const AddPermissionModalFromDB = () => {
@@ -29,18 +28,17 @@ const AddPermissionModalFromDB = () => {
 
   if (!show) return null;
 
-  // Destructure the custom pagination hook (array format)
+  // Use the custom pagination hook (returns an array)
   const [{ page, rowsPerPage }, resetPages, handleChangePage] =
     usePaginationHandler();
-
-  // Override rowsPerPage to 4
+  // Force rows per page to be 4
   const fixedRowsPerPage = 4;
 
   const [searchValue, setSearchValue] = useState("");
   const [selectedPermissions, setSelectedPermissions] = useState([]);
   const [filteredPermissions, setFilteredPermissions] = useState([]);
 
-  // Fetch all permissions from the DB
+  // Fetch permissions from the DB
   const { data: allPermissions = [], isLoading: permissionsLoading } =
     useGetAllUniversalPermissionsQuery();
 
@@ -58,44 +56,39 @@ const AddPermissionModalFromDB = () => {
     }
   }, [searchValue, allPermissions, permissionsLoading, resetPages]);
 
+  // Calculate total pages using fixedRowsPerPage (4)
   const totalPages = Math.ceil(filteredPermissions.length / fixedRowsPerPage);
 
   // Render permission tiles for the current page
   const permissionsOnCurrentPage = () => {
     if (filteredPermissions.length > 0 || !permissionsLoading) {
-      const perms = [];
       const startIndex = fixedRowsPerPage * (page - 1);
       const endIndex = Math.min(filteredPermissions.length, fixedRowsPerPage * page);
-      for (let i = startIndex; i < endIndex; i++) {
-        const permission = filteredPermissions[i];
-        perms.push(
-          <AddPermissionToCartTitle
-            key={`db-permission-${permission.id}`}
-            isLoading={permissionsLoading}
-            permission={permission}
-            permissionSelected={selectedPermissions.some(
+      return filteredPermissions.slice(startIndex, endIndex).map((permission) => (
+        <AddPermissionToCartTitle
+          key={`db-permission-${permission.id}`}
+          isLoading={permissionsLoading}
+          permission={permission}
+          permissionSelected={selectedPermissions.some(
+            (perm) => perm.name === permission.name
+          )}
+          togglePermission={() => {
+            let updatedSelected = [...selectedPermissions];
+            const index = updatedSelected.findIndex(
               (perm) => perm.name === permission.name
-            )}
-            togglePermission={() => {
-              let updatedSelected = [...selectedPermissions];
-              const index = updatedSelected.findIndex(
-                (perm) => perm.name === permission.name
-              );
-              if (index !== -1) {
-                updatedSelected.splice(index, 1);
-              } else {
-                updatedSelected.push({ name: permission.name });
-              }
-              setSelectedPermissions(updatedSelected);
-            }}
-          />
-        );
-      }
-      return perms;
+            );
+            if (index !== -1) {
+              updatedSelected.splice(index, 1);
+            } else {
+              updatedSelected.push({ name: permission.name });
+            }
+            setSelectedPermissions(updatedSelected);
+          }}
+        />
+      ));
     } else {
       return (
         <div className="no-permissions">
-          <NotContentFound />
           <span className="no-permissions-text">No permissions found</span>
         </div>
       );
@@ -108,15 +101,15 @@ const AddPermissionModalFromDB = () => {
 
   return (
     <ModalTemplate closeModalCallback={closeModalCallback}>
-      <div className="modal">
+      <div className="modal-container">
         {/* Modal Header */}
-        <div className="modal-heading-container">
-          <div className="modal-heading-container-value">{modalHeading}</div>
-          <ImCross onClick={closeModalCallback} className="modal-heading-container-close-icon" />
+        <div className="modal-header">
+          <div className="modal-title">{modalHeading}</div>
+          <ImCross onClick={closeModalCallback} className="modal-close" />
         </div>
 
         {/* Modal Body */}
-        <div className="modal-body-container">
+        <div className="modal-body">
           <div className="modal-search-pagination">
             <CloudCoreSearchBar
               placeholder="Permission name"
@@ -127,8 +120,8 @@ const AddPermissionModalFromDB = () => {
             <Pagination
               variant="outlined"
               shape="rounded"
-              boundaryCount={0}
-              siblingCount={0}
+              boundaryCount={1}
+              siblingCount={1}
               page={page}
               onChange={handleChangePage}
               count={totalPages}
@@ -136,20 +129,22 @@ const AddPermissionModalFromDB = () => {
               showLastButton
             />
           </div>
-          <div className="modal-content-container">
+          <div className="modal-content">
             {permissionsOnCurrentPage()}
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="modal-action-container">
+        <div className="modal-footer">
           <Button variant="contained" color="error" onClick={closeModalCallback}>
             Cancel
           </Button>
           <Button
             variant="outlined"
             onClick={() => {
-              alert(`Selected Permissions: ${selectedPermissions.map((p) => p.name).join(", ")}`);
+              alert(
+                `Selected Permissions: ${selectedPermissions.map((p) => p.name).join(", ")}`
+              );
               closeModalCallback();
             }}
           >
