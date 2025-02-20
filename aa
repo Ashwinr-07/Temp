@@ -1,0 +1,16 @@
+const showAddNewAdminPermissionModal = () => {
+    // Determine teamName from query params or currentTeam
+    const queryParams = queryString.parse(location.search);
+    let teamName;
+    if (parameterIsDefined(queryParams.team)) {
+        teamName = queryParams.team;
+    } else if (parameterIsDefined(currentTeam) && parameterIsDefined(currentTeam.team_name)) {
+        teamName = currentTeam.team_name;
+    }
+    
+    dispatch(toggleShowAddAdminPermissionModal({
+        show: true,
+        heading: "Add admin permission",
+        teamName: teamName, // Pass teamName here
+    }));
+}
