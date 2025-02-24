@@ -1,53 +1,40 @@
 import re
-from sumy.parsers.plaintext import PlaintextParser
-from sumy.nlp.tokenizers import Tokenizer
+from sumy.models.dom import Document, Sentence
 from sumy.summarizers.lsa import LsaSummarizer
 from sumy.utils import get_stop_words
 
-class CustomTokenizer(Tokenizer):
+def create_document_from_text(text):
     """
-    A naive tokenizer that splits on sentence-final punctuation
-    and splits words by whitespace, avoiding NLTK's punkt.
+    Manually splits the text into sentences and builds a Sumy Document.
+    This bypasses Sumy's default Tokenizer which requires nltk punkt.
     """
-
-    def to_sentences(self, text):
-        # Split on '.', '?', or '!' followed by optional whitespace
-        raw_sentences = re.split(r'[.?!]+\s*', text)
-        raw_sentences = [s.strip() for s in raw_sentences if s.strip()]
-
-        # Convert each sentence into a Sumy Sentence object
-        from sumy.models.dom import Sentence
-        sentences = [Sentence(s, i) for i, s in enumerate(raw_sentences)]
-        return sentences
-
-    def tokenize_words(self, sentence):
-        # Naive whitespace-based word splitting
-        return sentence.split()
+    # Split text on sentence-ending punctuation (., !, or ?)
+    raw_sentences = re.split(r'[.!?]+\s*', text)
+    # Remove any empty strings
+    raw_sentences = [s.strip() for s in raw_sentences if s.strip()]
+    # Create Sentence objects with an index
+    sentences = [Sentence(sentence, idx) for idx, sentence in enumerate(raw_sentences)]
+    return Document(sentences)
 
 def main():
-    # Path to your transcript file
-    transcript_file = "transcript.txt"
-
-    # Read the transcript text
+    transcript_file = "transcript.txt"  # Ensure your transcript file is here
     with open(transcript_file, "r", encoding="utf-8") as f:
         text = f.read()
 
-    # Create a parser using our CustomTokenizer
-    parser = PlaintextParser.from_string(text, CustomTokenizer("english"))
+    # Create a document manually from the transcript text
+    document = create_document_from_text(text)
 
-    # Initialize the LSA Summarizer (you can use others: LexRankSummarizer, LuhnSummarizer, etc.)
+    # Initialize the LSA summarizer and set stop words
     summarizer = LsaSummarizer()
-    summarizer.stop_words = get_stop_words("english")  # Sumy's built-in stopwords
+    summarizer.stop_words = get_stop_words("english")
 
-    # Number of sentences in the final summary
+    # Set the number of sentences you want in your summary
     SUMMARY_SENTENCES = 5
+    summary = summarizer(document, SUMMARY_SENTENCES)
 
-    # Summarize
-    summary = summarizer(parser.document, SUMMARY_SENTENCES)
-
-    # Print the summary as bullet points
+    # Print each sentence as a bullet point
     for sentence in summary:
-        print("-", sentence)
+        print("- " + str(sentence))
 
 if __name__ == "__main__":
     main()
