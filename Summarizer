@@ -1,0 +1,247 @@
+I. Summarization Using Various Libraries
+Example 1: Gensim Summarizer
+# pip install gensim
+
+from gensim.summarization import summarize
+
+# Read the transcript file
+with open("transcript_long.txt", "r", encoding="utf-8") as f:
+    text = f.read()
+
+# Generate summary (adjust ratio as needed)
+# Setting split=True returns a list of sentences.
+summary_sentences = summarize(text, ratio=0.2, split=True)
+
+# Print each summary sentence as a bullet point
+for sentence in summary_sentences:
+    print(f"- {sentence}")
+Example 2: Hugging Face Transformers Pipeline
+# pip install transformers torch
+
+from transformers import pipeline
+
+# Initialize the summarization pipeline (using a pre-trained model)
+summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+
+# Read the transcript
+with open("transcript_long.txt", "r", encoding="utf-8") as f:
+    text = f.read()
+
+# For long texts, you may need to chunk the text.
+# Here we assume the text length is manageable for demonstration.
+summary = summarizer(text, max_length=130, min_length=30, do_sample=False)
+
+# The summarizer returns a list of dictionaries
+summary_text = summary[0]['summary_text']
+
+# Split the summary into sentences (naively using period) and print as bullet points
+for sentence in summary_text.split('. '):
+    if sentence.strip():
+        print(f"- {sentence.strip()}")
+Example 3: Sumy LexRank Summarizer
+# pip install sumy
+
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.lex_rank import LexRankSummarizer
+
+# Parse the transcript file
+parser = PlaintextParser.from_file("transcript_long.txt", Tokenizer("english"))
+
+# Initialize the LexRank summarizer and extract 5 summary sentences
+summarizer = LexRankSummarizer()
+summary = summarizer(parser.document, sentences_count=5)
+
+# Print each sentence as a bullet point
+for sentence in summary:
+    print(f"- {sentence}")
+Example 4: Bert Extractive Summarizer
+# pip install bert-extractive-summarizer
+
+from summarizer import Summarizer
+
+# Read the transcript text
+with open("transcript_long.txt", "r", encoding="utf-8") as f:
+    text = f.read()
+
+# Initialize the Bert extractive summarizer model
+model = Summarizer()
+result = model(text, min_length=60)
+
+# Optionally split the resulting summary into sentences using '. ' as a separator
+sentences = result.split('. ')
+for sentence in sentences:
+    if sentence.strip():
+        print(f"- {sentence.strip()}")
+Example 5: Summa TextRank Summarizer
+# pip install summa
+
+from summa import summarizer
+
+# Read transcript
+with open("transcript_long.txt", "r", encoding="utf-8") as f:
+    text = f.read()
+
+# Generate summary using Summa (adjust ratio as needed)
+summary = summarizer.summarize(text, ratio=0.2)
+
+# Split the summary into sentences and output each as a bullet point
+for sentence in summary.split('. '):
+    if sentence.strip():
+        print(f"- {sentence.strip()}.")
+II. Summarization Without Language Models, NLTK, or SpaCy
+Example 6: Basic Frequency-Based Summarization
+# No external libraries needed apart from built-ins
+
+import re
+from collections import Counter
+
+# Read transcript file
+with open("transcript_long.txt", "r", encoding="utf-8") as f:
+    text = f.read()
+
+# Naively split text into sentences based on period.
+sentences = [s.strip() for s in text.split('.') if s.strip()]
+
+# Tokenize words using regex (convert to lowercase)
+words = re.findall(r'\w+', text.lower())
+
+# Define a small list of stopwords to ignore
+stopwords = {"the", "and", "is", "in", "it", "of", "to", "a", "an"}
+words = [w for w in words if w not in stopwords]
+
+# Count word frequencies
+word_freq = Counter(words)
+
+# Score each sentence by summing frequencies of its words
+sentence_scores = {}
+for sentence in sentences:
+    sentence_words = re.findall(r'\w+', sentence.lower())
+    score = sum(word_freq.get(word, 0) for word in sentence_words)
+    sentence_scores[sentence] = score
+
+# Select the top 5 scored sentences
+top_sentences = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[:5]
+
+# Print results as bullet points
+for sent in top_sentences:
+    print(f"- {sent}.")
+Example 7: TF-IDF Based Summarization Using Scikit-learn
+# pip install scikit-learn
+
+import re
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+# Read the transcript file
+with open("transcript_long.txt", "r", encoding="utf-8") as f:
+    text = f.read()
+
+# Split text into sentences (simple split on period)
+sentences = [s.strip() for s in text.split('.') if s.strip()]
+
+# Compute TF-IDF for the sentences (using built-in English stopwords)
+vectorizer = TfidfVectorizer(stop_words='english')
+tfidf_matrix = vectorizer.fit_transform(sentences)
+
+# Compute average TF-IDF score for each sentence
+scores = np.array(tfidf_matrix.mean(axis=1)).flatten()
+
+# Get indices of the top 5 sentences
+top_indices = scores.argsort()[-5:][::-1]
+
+for idx in top_indices:
+    print(f"- {sentences[idx]}.")
+Example 8: TextRank Summarization Using NetworkX
+# pip install networkx scikit-learn
+
+import re
+import networkx as nx
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Read the transcript file
+with open("transcript_long.txt", "r", encoding="utf-8") as f:
+    text = f.read()
+
+# Naively split into sentences
+sentences = [s.strip() for s in text.split('.') if s.strip()]
+
+# Compute TF-IDF vectors for the sentences
+vectorizer = TfidfVectorizer(stop_words='english')
+tfidf_matrix = vectorizer.fit_transform(sentences)
+
+# Calculate cosine similarity between sentences
+sim_matrix = cosine_similarity(tfidf_matrix)
+
+# Build a similarity graph and apply PageRank
+nx_graph = nx.from_numpy_array(sim_matrix)
+scores = nx.pagerank(nx_graph)
+
+# Rank sentences based on their PageRank score
+ranked_sentences = sorted(((scores[i], s) for i, s in enumerate(sentences)), reverse=True)
+top_sentences = [s for score, s in ranked_sentences[:5]]
+
+for sentence in top_sentences:
+    print(f"- {sentence}.")
+Example 9: KMeans Clustering for Representative Sentence Extraction
+# pip install scikit-learn
+
+import re
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+from sklearn.metrics import pairwise_distances_argmin_min
+
+# Read the transcript
+with open("transcript_long.txt", "r", encoding="utf-8") as f:
+    text = f.read()
+
+# Split the text into sentences
+sentences = [s.strip() for s in text.split('.') if s.strip()]
+
+# Vectorize sentences using TF-IDF
+vectorizer = TfidfVectorizer(stop_words='english')
+tfidf_matrix = vectorizer.fit_transform(sentences)
+
+# Cluster sentences into 5 clusters
+num_clusters = 5
+kmeans = KMeans(n_clusters=num_clusters, random_state=42)
+kmeans.fit(tfidf_matrix)
+
+# Find the sentence closest to each cluster center
+closest, _ = pairwise_distances_argmin_min(kmeans.cluster_centers_, tfidf_matrix)
+selected_sentences = [sentences[idx] for idx in closest]
+
+for sentence in selected_sentences:
+    print(f"- {sentence}.")
+Example 10: Heuristic Summarization Based on Sentence Position and Length
+# No external libraries needed
+
+# Read the transcript file
+with open("transcript_long.txt", "r", encoding="utf-8") as f:
+    text = f.read()
+
+# Naively split into sentences using period
+sentences = [s.strip() for s in text.split('.') if s.strip()]
+
+# Score sentences based on word count and sentence position (favoring earlier sentences)
+sentence_scores = {}
+for i, sentence in enumerate(sentences):
+    # Score: longer sentences and earlier positions get higher weight
+    length_score = len(sentence.split())
+    position_score = 1 / (i + 1)  # higher weight for sentences at the beginning
+    sentence_scores[sentence] = length_score * position_score
+
+# Select the top 5 sentences with the highest scores
+top_sentences = sorted(sentence_scores, key=sentence_scores.get, reverse=True)[:5]
+
+for sentence in top_sentences:
+    print(f"- {sentence}.")
+Each example is self-contained and includes the necessary pip install commands as comments. You can run these snippets in your Python environment (ensuring that transcript_long.txt is available in your working directory) to generate a bullet-point summary of your tech video transcript.
+
+
+
+
+
+
