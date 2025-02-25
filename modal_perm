@@ -1,173 +1,195 @@
 import React, { useState, useEffect } from "react";
-import { ImCross } from "react-icons/im";
+import { InCross } from "react-icons/im";
 import { Button, Pagination } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
-import ModalTemplate from "./ModalTemplate";
+import ModalTemplate from "../ModalTemplate";
 import usePaginationHandler from "../../hooks/usePaginationHandler";
-import CloudCoreSearchBar from "../../components/CustomStyledComponents/CloudSearchBar";
-import AddPermissionToCartTitle from "../../PermissionComponents/AddPermissionToCartTitle";
-import NotContentFound from "../NoContentFound";
-import { useGetAllUniversalPermissionsQuery, useUpdateTeamAdminPermissionsMutation } from "../../services/TeamsApiService";
+import CloudCoreSearchBar from "../CustomStyledComponents/CloudCoreSearchBar";
+import AddPermissionToCartTile from "../PermissionComponents/AddPermissionToCartTile";
+import {
+    useGetAllUniversalPermissionsQuery,
+    useUpdateTeamAdminPermissionsMutation,
+} from "../../services/TeamsApiService";
 import { toggleShowAddAdminPermissionModal } from "../../store/slices/ModalManager";
-import "../../css/AddPermissionModal.css";
+import "../css/AddPermissionModal.css";
 
-const AddPermissionModalFromDB = () => {
-  const dispatch = useDispatch();
+const AddPermissionModal = () => {
+    const dispatch = useDispatch();
 
-  // Retrieve modal properties (heading, show flag, team name) from Redux.
-  const modalHeading = useSelector(
-    (state) => state.modalManager.addAdminPermissionModal.heading
-  );
-  const teamName = useSelector(
-    (state) => state.modalManager.addAdminPermissionModal.teamName
-  );
-  const show = useSelector(
-    (state) => state.modalManager.addAdminPermissionModal.show
-  );
+    // Retrieve modal properties from Redux.
+    const modalHeading = useSelector(
+        (state) => state.modalManager.addAdminPermissionModal.heading
+    );
+    const teamName = useSelector(
+        (state) => state.modalManager.addAdminPermissionModal.teamName
+    );
+    const show = useSelector(
+        (state) => state.modalManager.addAdminPermissionModal.show
+    );
 
-  if (!show) return null;
+    if (!show) return null;
 
-  // Use the custom pagination hook. We ignore the returned rowsPerPage and force 4 per page.
-  const [{ page, rowsPerPage: _unusedRowsPerPage }, resetPages, handleChangePage] =
-    usePaginationHandler();
-  const fixedRowsPerPage = 4;
+    const [page, rowsPerPage, unusedRowsPerPage, resetPages, handleChangePage] =
+        usePaginationHandler();
+    const fixedRowsPerPage = 4;
 
-  const [searchValue, setSearchValue] = useState("");
-  const [selectedPermissions, setSelectedPermissions] = useState([]);
-  const [filteredPermissions, setFilteredPermissions] = useState([]);
+    const [searchValue, setSearchValue] = useState("");
+    const [selectedPermissions, setSelectedPermissions] = useState([]);
+    const [filteredPermissions, setFilteredPermissions] = useState([]);
 
-  // Fetch all universal permissions from the DB.
-  const { data: allPermissions = [], isLoading: permissionsLoading } =
-    useGetAllUniversalPermissionsQuery();
+    const { data: allPermissions = [], isLoading: permissionsLoading } =
+        useGetAllUniversalPermissionsQuery();
 
-  // Mutation for updating team admin permissions.
-  const [updateTeamAdminPermissions, { isLoading: isUpdating }] =
-    useUpdateTeamAdminPermissionsMutation();
+    const [updateTeamAdminPermissions] = useUpdateTeamAdminPermissionsMutation();
 
-  // Filter permissions when the search value or data changes.
-  useEffect(() => {
-    if (allPermissions && !permissionsLoading) {
-      const formattedSearch = searchValue.toLowerCase();
-      const filtered = allPermissions.filter((permission) => {
-        const nameMatched = permission.name.toLowerCase().includes(formattedSearch);
-        const descriptionMatched = permission.description.toLowerCase().includes(formattedSearch);
-        return nameMatched || descriptionMatched;
-      });
-      setFilteredPermissions(filtered);
-      resetPages();
-    }
-  }, [searchValue, allPermissions, permissionsLoading, resetPages]);
+    // Filter permissions on search or data change.
+    useEffect(() => {
+        if (allPermissions && !permissionsLoading) {
+            const formattedSearch = searchValue.toLowerCase();
+            const filtered = allPermissions.filter((permission) => {
+                return (
+                    permission.name.toLowerCase().includes(formattedSearch) ||
+                    permission.description.toLowerCase().includes(formattedSearch)
+                );
+            });
+            setFilteredPermissions(filtered);
+            resetPages();
+        }
+    }, [searchValue, allPermissions, permissionsLoading, resetPages]);
 
-  const totalPages = Math.ceil(filteredPermissions.length / fixedRowsPerPage);
+    const totalPages = Math.ceil(filteredPermissions.length / fixedRowsPerPage);
 
-  // Render the permission tiles for the current page.
-  const permissionsOnCurrentPage = () => {
-    if (filteredPermissions.length > 0 || !permissionsLoading) {
-      const startIndex = fixedRowsPerPage * (page - 1);
-      const endIndex = Math.min(filteredPermissions.length, fixedRowsPerPage * page);
-      return filteredPermissions.slice(startIndex, endIndex).map((permission) => (
-        <AddPermissionToCartTitle
-          key={`db-permission-${permission.id}`}
-          isLoading={permissionsLoading}
-          permission={permission}
-          permissionSelected={selectedPermissions.some(
-            (perm) => perm.name === permission.name
-          )}
-          togglePermission={() => {
-            let updatedSelected = [...selectedPermissions];
-            const index = updatedSelected.findIndex(
-              (perm) => perm.name === permission.name
+    // Updated rendering function for permissions.
+    const permissionsOnCurrentPage = () => {
+        // Show a consistent text placeholder when loading.
+        if (permissionsLoading) {
+            return (
+                <div className="no-permissions">
+                    <span className="no-permissions-text">
+                        Loading permissions...
+                    </span>
+                </div>
             );
-            if (index !== -1) {
-              updatedSelected.splice(index, 1);
+        }
+
+        // When no permissions are found.
+        if (filteredPermissions.length === 0) {
+            return (
+                <div className="no-permissions">
+                    <span className="no-permissions-text">
+                        No permissions found
+                    </span>
+                </div>
+            );
+        }
+
+        const startIndex = fixedRowsPerPage * (page - 1);
+        const endIndex = Math.min(
+            filteredPermissions.length,
+            fixedRowsPerPage * page
+        );
+
+        return filteredPermissions.slice(startIndex, endIndex).map((permission) => (
+            <AddPermissionToCartTile
+                key={`db-permission-${permission.id}`}
+                isLoading={permissionsLoading}
+                permission={permission}
+                permissionSelected={selectedPermissions.some(
+                    (perm) => perm.name === permission.name
+                )}
+                togglePermission={() => {
+                    let updatedSelected = [...selectedPermissions];
+                    const index = updatedSelected.findIndex(
+                        (perm) => perm.name === permission.name
+                    );
+
+                    if (index !== -1) {
+                        updatedSelected.splice(index, 1);
+                    } else {
+                        updatedSelected.push({ name: permission.name });
+                    }
+
+                    setSelectedPermissions(updatedSelected);
+                }}
+            />
+        ));
+    };
+
+    const closeModalCallback = () => {
+        dispatch(toggleShowAddAdminPermissionModal({ show: false }));
+    };
+
+    const confirmPermissionAddition = async () => {
+        try {
+            const payload = {
+                teamName,
+                admin_permissions: selectedPermissions.map((perm) => ({
+                    name: perm.name,
+                })),
+            };
+
+            const response = await updateTeamAdminPermissions(payload).unwrap();
+
+            if (response.responseStatus === 200 || response.responseStatus === 201) {
+                console.log("Permissions updated successfully!");
+                closeModalCallback();
             } else {
-              updatedSelected.push({ name: permission.name });
+                console.log("Failed to update permissions.");
             }
-            setSelectedPermissions(updatedSelected);
-          }}
-        />
-      ));
-    } else {
-      return (
-        <div className="no-permissions">
-          <NotContentFound />
-          <span className="no-permissions-text">No permissions found</span>
-        </div>
-      );
-    }
-  };
+        } catch (err) {
+            console.error("Error updating permissions", err);
+            alert("Error updating permissions!");
+        }
+    };
 
-  const closeModalCallback = () => {
-    dispatch(toggleShowAddAdminPermissionModal({ show: false }));
-  };
+    return (
+        <ModalTemplate closeModalCallback={closeModalCallback}>
+            <div className="modal-container">
+                <div className="modal-header">
+                    <div className="modal-title">{modalHeading}</div>
+                    <InCross onClick={closeModalCallback} className="modal-close" />
+                </div>
 
-  // Confirm button handler: update team admin permissions via PUT request.
-  const confirmPermissionAddition = async () => {
-    try {
-      const payload = {
-        name: teamName,
-        admin_permissions: selectedPermissions.map((perm) => ({ name: perm.name })),
-      };
-      const response = await updateTeamAdminPermissions(payload).unwrap();
-      if (response.responseStatus === 200 || response.responseStatus === 201) {
-        alert("Permissions updated successfully!");
-      } else {
-        alert("Failed to update permissions.");
-      }
-      closeModalCallback();
-    } catch (err) {
-      console.error("Error updating permissions", err);
-      alert("Error updating permissions!");
-    }
-  };
+                <div className="modal-body">
+                    <div className="modal-search-pagination">
+                        <CloudCoreSearchBar
+                            placeholder="Permission name"
+                            disabled={filteredPermissions.length === 0 && searchValue.length === 0}
+                            value={searchValue}
+                            setSearchValue={(e) => setSearchValue(e.target.value)}
+                        />
 
-  return (
-    <ModalTemplate closeModalCallback={closeModalCallback}>
-      <div className="modal-container">
-        {/* Modal Header */}
-        <div className="modal-header">
-          <div className="modal-title">{modalHeading}</div>
-          <ImCross onClick={closeModalCallback} className="modal-close" />
-        </div>
+                        <Pagination
+                            variant="outlined"
+                            shape="rounded"
+                            boundaryCount={1}
+                            siblingCount={1}
+                            page={page}
+                            onChange={handleChangePage}
+                            count={totalPages}
+                        />
+                    </div>
 
-        {/* Modal Body */}
-        <div className="modal-body">
-          <div className="modal-search-pagination">
-            <CloudCoreSearchBar
-              placeholder="Permission name"
-              disabled={filteredPermissions.length === 0 && searchValue.length === 0}
-              searchValue={searchValue}
-              setSearchValue={(e) => setSearchValue(e.target.value)}
-            />
-            <Pagination
-              variant="outlined"
-              shape="rounded"
-              boundaryCount={1}
-              siblingCount={1}
-              page={page}
-              onChange={handleChangePage}
-              count={totalPages}
-              showFirstButton
-              showLastButton
-            />
-          </div>
-          <div className="modal-content">
-            {permissionsOnCurrentPage()}
-          </div>
-        </div>
+                    <div className="modal-content">
+                        {permissionsOnCurrentPage()}
+                    </div>
+                </div>
 
-        {/* Modal Footer */}
-        <div className="modal-footer">
-          <Button variant="contained" color="error" onClick={closeModalCallback}>
-            Cancel
-          </Button>
-          <Button variant="outlined" onClick={confirmPermissionAddition}>
-            Confirm Permission
-          </Button>
-        </div>
-      </div>
-    </ModalTemplate>
-  );
+                <div className="modal-footer">
+                    <Button
+                        variant="contained"
+                        color="error"
+                        onClick={closeModalCallback}
+                    >
+                        Cancel
+                    </Button>
+                    <Button variant="outlined" onClick={confirmPermissionAddition}>
+                        Add Permission
+                    </Button>
+                </div>
+            </div>
+        </ModalTemplate>
+    );
 };
 
-export default AddPermissionModalFromDB;
+export default AddPermissionModal;
