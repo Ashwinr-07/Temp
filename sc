@@ -1,187 +1,243 @@
-// AddTeamPermissionsModal.js
-import React, { useState, useEffect } from "react";
-import { ImCross } from "react-icons/im";
-import { Button, Pagination } from "@mui/material";
-import ModalTemplate from "../ModalTemplate";
-import CloudCoreSearchBar from "../CustomStyledComponents/CloudCoreSearchBar";
-import { ShoppingCart, CheckCircle } from "@mui/icons-material";
-import { useDispatch, useSelector } from "react-redux";
-import { toggleShowAddTeamPermissionModal } from "../../store/slices/ModalManager";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Content Overview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-const AddTeamPermissionsModal = () => {
-  const dispatch = useDispatch();
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f9fafb;
+            line-height: 1.6;
+        }
 
-  const modalHeading = useSelector(
-    (state) => state.modalManager.addTeamPermissionModal.heading
-  );
-  const memberName = useSelector(
-    (state) => state.modalManager.addTeamPermissionModal.memberName
-  );
-  const show = useSelector(
-    (state) => state.modalManager.addTeamPermissionModal.show
-  );
+        .header-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            display: block;
+        }
 
-  if (!show) return null;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
 
-  // Hardcoded list of 16 permissions
-  const hardcodedPermissions = [
-    { id: 1, name: "Permission 1", description: "Description 1" },
-    { id: 2, name: "Permission 2", description: "Description 2" },
-    { id: 3, name: "Permission 3", description: "Description 3" },
-    { id: 4, name: "Permission 4", description: "Description 4" },
-    { id: 5, name: "Permission 5", description: "Description 5" },
-    { id: 6, name: "Permission 6", description: "Description 6" },
-    { id: 7, name: "Permission 7", description: "Description 7" },
-    { id: 8, name: "Permission 8", description: "Description 8" },
-    { id: 9, name: "Permission 9", description: "Description 9" },
-    { id: 10, name: "Permission 10", description: "Description 10" },
-    { id: 11, name: "Permission 11", description: "Description 11" },
-    { id: 12, name: "Permission 12", description: "Description 12" },
-    { id: 13, name: "Permission 13", description: "Description 13" },
-    { id: 14, name: "Permission 14", description: "Description 14" },
-    { id: 15, name: "Permission 15", description: "Description 15" },
-    { id: 16, name: "Permission 16", description: "Description 16" }
-  ];
+        .video-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            padding: 2rem;
+        }
 
-  // Hardcoded team member's permissions (assume they already have 5)
-  const memberPermissions = [
-    "Permission 12",
-    "Permission 14",
-    "Permission 15",
-    "Permission 16",
-    "Permission 11"
-  ];
+        .video-section h1 {
+            font-size: 2rem;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
 
-  // Reorder: first show non-assigned permissions then the 5 assigned ones
-  const nonMemberPermissions = hardcodedPermissions.filter(
-    (p) => !memberPermissions.includes(p.name)
-  );
-  const memberAssignedPermissions = hardcodedPermissions.filter((p) =>
-    memberPermissions.includes(p.name)
-  );
-  const combinedPermissions = [...nonMemberPermissions, ...memberAssignedPermissions];
+        .play-icon {
+            width: 32px;
+            height: 32px;
+            margin-right: 12px;
+            color: #2563eb;
+        }
 
-  // Local state for search, selected (to simulate toggling), and pagination
-  const [searchValue, setSearchValue] = useState("");
-  const [selectedPermissions, setSelectedPermissions] = useState([]);
-  const [filteredPermissions, setFilteredPermissions] = useState(combinedPermissions);
+        video {
+            width: 100%;
+            max-height: 400px;
+            border-radius: 8px;
+            background: #000;
+        }
 
-  // Pagination state
-  const [page, setPage] = useState(1);
-  const fixedRowsPerPage = 4;
-  const totalPages = Math.ceil(filteredPermissions.length / fixedRowsPerPage);
+        .content-grid {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 2rem;
+        }
 
-  useEffect(() => {
-    const formattedSearch = searchValue.toLowerCase();
-    const filtered = combinedPermissions.filter((permission) => {
-      const nameMatched = permission.name.toLowerCase().includes(formattedSearch);
-      const descriptionMatched = permission.description.toLowerCase().includes(formattedSearch);
-      return nameMatched || descriptionMatched;
-    });
-    setFilteredPermissions(filtered);
-    setPage(1);
-  }, [searchValue, combinedPermissions]);
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
 
-  const handleChangePage = (event, value) => {
-    setPage(value);
-  };
+        .summary-section, .chapters-section {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
 
-  const permissionsOnCurrentPage = () => {
-    if (filteredPermissions.length === 0) {
-      return (
-        <div className="no-permissions">
-          <span className="no-permissions-text">No permissions found</span>
+        .section-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .section-header h2 {
+            font-size: 1.25rem;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            color: #2563eb;
+        }
+
+        .section-content {
+            padding: 1.5rem;
+        }
+
+        .summary-text {
+            color: #374151;
+            white-space: pre-line;
+        }
+
+        .chapter-item {
+            padding: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chapter-item:hover {
+            background-color: #f9fafb;
+        }
+
+        .chapter-item.active {
+            background-color: #eff6ff;
+            border-color: #3b82f6;
+        }
+
+        .chapter-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background-color: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .chapter-item.active .chapter-number {
+            background-color: #2563eb;
+        }
+
+        .chapter-content {
+            flex: 1;
+        }
+
+        .chapter-title {
+            font-weight: 500;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .chapter-description {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .chapter-timestamp {
+            font-size: 0.75rem;
+            color: #2563eb;
+            font-weight: 500;
+        }
+
+        .chapter-item-inner {
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+
+        .error {
+            text-align: center;
+            padding: 2rem;
+            color: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Image -->
+    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&h=600" 
+         alt="Application Screenshot" 
+         class="header-image">
+
+    <div class="container">
+        <!-- Video Section -->
+        <div class="video-section">
+            <h1>
+                <svg class="play-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h1m4 0h1M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                Content Overview
+            </h1>
+            <video id="mainVideo" controls preload="metadata">
+                <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
         </div>
-      );
-    }
 
-    const startIndex = fixedRowsPerPage * (page - 1);
-    const endIndex = Math.min(filteredPermissions.length, fixedRowsPerPage * page);
+        <!-- Content Grid -->
+        <div class="content-grid">
+            <!-- Summary Section -->
+            <div class="summary-section">
+                <div class="section-header">
+                    <h2>
+                        <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        Summary
+                    </h2>
+                </div>
+                <div class="section-content">
+                    <div id="summaryContent" class="loading">Loading summary...</div>
+                </div>
+            </div>
 
-    return filteredPermissions.slice(startIndex, endIndex).map((permission) => {
-      // Check if this permission is already assigned
-      const isAssigned = memberPermissions.includes(permission.name);
-      return (
-        <div key={`permission-${permission.id}`} className="permission-tile">
-          <div className="permission-info">
-            <div className="permission-name">{permission.name}</div>
-            <div className="permission-description">{permission.description}</div>
-          </div>
-          <div className="permission-icon">
-            {isAssigned ? (
-              <CheckCircle style={{ color: "green" }} />
-            ) : (
-              <ShoppingCart />
-            )}
-          </div>
-          <div className="permission-action">
-            <button
-              onClick={() => {
-                // Toggle selection for demo purposes
-                let updatedSelected = [...selectedPermissions];
-                const index = updatedSelected.findIndex((p) => p.name === permission.name);
-                if (index !== -1) {
-                  updatedSelected.splice(index, 1);
-                } else {
-                  updatedSelected.push(permission);
-                }
-                setSelectedPermissions(updatedSelected);
-                console.log("Toggled permission:", permission.name, updatedSelected);
-              }}
-            >
-              Toggle
-            </button>
-          </div>
+            <!-- Chapters Section -->
+            <div class="chapters-section">
+                <div class="section-header">
+                    <h2>
+                        <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                        </svg>
+                        Chapters
+                    </h2>
+                </div>
+                <div class="section-content">
+                    <div id="chaptersContent" class="loading">Loading chapters...</div>
+                </div>
+            </div>
         </div>
-      );
-    });
-  };
+    </div>
 
-  const closeModalCallback = () => {
-    dispatch(toggleShowAddTeamPermissionModal({ show: false }));
-  };
-
-  const confirmPermissionUpdate = () => {
-    console.log("Confirming permissions update for member:", memberName);
-    console.log("Selected permissions:", selectedPermissions);
-    closeModalCallback();
-  };
-
-  return (
-    <ModalTemplate closeCallback={closeModalCallback}>
-      <div className="modal-header">
-        <div className="modal-title">{modalHeading}</div>
-        <ImCross onClick={closeModalCallback} className="modal-close" />
-      </div>
-      <div className="modal-body">
-        <div className="modal-search-pagination">
-          <CloudCoreSearchBar
-            placeholder="Permission name"
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-          />
-          <Pagination
-            variant="outlined"
-            shape="rounded"
-            boundaryCount={1}
-            siblingCount={1}
-            page={page}
-            onChange={handleChangePage}
-            count={totalPages}
-          />
-        </div>
-        <div className="modal-content">{permissionsOnCurrentPage()}</div>
-      </div>
-      <div className="modal-footer">
-        <Button variant="contained" color="error" onClick={closeModalCallback}>
-          Cancel
-        </Button>
-        <Button type="button" variant="outlined" onClick={confirmPermissionUpdate}>
-          Update Permissions
-        </Button>
-      </div>
-    </ModalTemplate>
-  );
-};
-
-export default AddTeamPermissionsModal;
+    <script src="script.js"></script>
+</body>
+</html>
